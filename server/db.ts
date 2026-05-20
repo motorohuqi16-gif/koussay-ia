@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, messages, Message, InsertMessage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,39 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Messages queries
+export async function createMessage(userId: number, role: 'user' | 'assistant', content: string): Promise<Message | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  await db.insert(messages).values({
+    userId,
+    role,
+    content,
+  });
+
+  // Fetch the most recent message for this user
+  const created = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.userId, userId))
+    .orderBy(desc(messages.createdAt))
+    .limit(1);
+  
+  return created.length > 0 ? created[0] : null;
+}
+
+export async function getConversationHistory(userId: number, limit: number = 50): Promise<Message[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.userId, userId))
+    .orderBy(desc(messages.createdAt))
+    .limit(limit);
+
+  // Return in chronological order (oldest first)
+  return result.reverse();
+}
