@@ -1,0 +1,43 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://3Mf2VWtb4rpHbeS.root:EJEKLcT54m6Y27a7UfXB@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/RjGtDhWxwUfDvYEVpnTefX?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663616570506/RjGtDhWxwUfDvYEVpnTefX",
+    "access_key_id": "ASIAZV3A2ECZOCM4BRBQ",
+    "secret_access_key": "aQ46vIjTlOA68aY7vsgyX/WDSnpztpl6QsvOlLyr",
+    "session_token": "IQoJb3JpZ2luX2VjECcaCXVzLWVhc3QtMSJHMEUCIQCMMWXenTSTe19taIB4dUgbl0/eAZ8UqXNUa3d344VUcQIgETYdgpzpELZz3Q9uxCQJsRyoQdnwowQkhslPJYl97q8q/wMI8P//////////ARAEGgw2NjUzODYwOTg4NjYiDLHMeQlcQ3hPeTdYsCrTA49sALQyTbgB7vOkJYhfYEhfu7+1caIJ60SSw2ZRyXDPJNSFt0AZ6ubXOQDSlHpkQneiFlHtmqfKIK9CUX7qNMjeTgt5o6IhPHK/X799PWl300r874VFxcjSCg7jStI+RX6sMYMZlGi2oePZnUy28f19ex/Ev6ppoO3FUmYIeIgxNbJkdqXWSIGuxu9fbb1slV+hp1XErYylF8r73r31syaK9tXmQxw/7iSGM4Lqh0bom3r1MAHElGHtqIzOCF1nwpPmrB0N7yR7ptw+i5mmiQZmsMsoBHzM+ZLj7QewaHbYnJsqeb+3+UD7tBqJVIXGDzP3X72uYvhMp8GHcyJogf9Nyp/7yYOgYpgKIoE3wqOnaTq2fjjrcxhJXV/1fL/6N7v1xR7piK1woEWwJ7SYLo1a/QAHgYSzBps9Qb00c3GuppgIBuRidHnmsivZCuomwWfTaEymL5uIxFmn0lQgC6gv1l2iF16IOBmnq4Qo9KRVnWUfhvkql/40VYYeNiq/j77pwHwwBTGmEybXWwlbm+kN6JhtfssOQH7TlIE6u/V8j3PF6EWZ0MFcYnl/AtBZHHl9tvnBEjwNXj4VTLfdot9ikJ6mntCkn2K2OQVCmvm7f0TbMNaRt9AGOp0B3FoslI4s2KpxwrHNYtwdjXVVY0LwZaRE4jIu+K25VutvVZxcCBZ9Rsg3ev1mr65sFIFxHGXtoyWcySe3VIupCQoJhJUzu6sKdv47LkwsrKgrfRkA9cT1rjxB35NBMLAfJgWmk6jX3VdC884GSDgYRyXKI85vH7V1ipo4nNHahz5aWBYM51nvS82IuQSCNKyXTRxCSHckKgSu5RkCbw==",
+    "expiration": "2026-05-21T02:44:38.000Z"
+  },
+  "name": "koussay-ia",
+  "path": "/home/ubuntu/koussay-ia",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "VnDRUAKZQanFfDPPosS9Pm",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "nbbipeDNK3YVrpdN8V8S57",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Anita",
+    "OWNER_OPEN_ID": "aFZdwPtUqM7rC5tv5SUWZd",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "5ba06058-cf31-4e6e-8947-c767527a47a4",
+    "VITE_APP_ID": "RjGtDhWxwUfDvYEVpnTefX",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Le Koussay IA",
+    "VITE_FRONTEND_FORGE_API_KEY": "ZdTUokbm9jraLf8xftJ23p",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}
