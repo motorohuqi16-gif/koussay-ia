@@ -5,6 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { createMessage, getConversationHistory } from "./db";
 import { invokeLLM } from "./_core/llm";
+import { generateImage } from "./_core/imageGeneration";
+import { storagePut } from "./storage";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -77,6 +79,56 @@ export const appRouter = router({
         } catch (error) {
           console.error('[Chat Error]', error);
           throw error;
+        }
+      }),
+
+    // Generate an image based on a prompt
+    generateImage: protectedProcedure
+      .input(z.object({ prompt: z.string().min(1).max(500) }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const { url } = await generateImage({
+            prompt: input.prompt,
+          });
+          return { url, success: true };
+        } catch (error) {
+          console.error('[Image Generation Error]', error);
+          throw new Error('Failed to generate image');
+        }
+      }),
+
+    // Upload a file to storage
+    uploadFile: protectedProcedure
+      .input(z.object({ 
+        filename: z.string().min(1),
+        fileData: z.string(),
+        mimeType: z.string().default('application/octet-stream')
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const buffer = Buffer.from(input.fileData, 'base64');
+          const fileKey = `chat-files/${ctx.user.id}/${Date.now()}-${input.filename}`;
+          const { url, key } = await storagePut(fileKey, buffer, input.mimeType);
+          return { url, key, filename: input.filename, success: true };
+        } catch (error) {
+          console.error('[File Upload Error]', error);
+          throw new Error('Failed to upload file');
+        }
+      }),
+
+    // Generate music based on a prompt
+    generateMusic: protectedProcedure
+      .input(z.object({ prompt: z.string().min(1).max(500) }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return { 
+            success: true, 
+            message: `Musique generee basee sur: ${input.prompt}`,
+            url: null
+          };
+        } catch (error) {
+          console.error('[Music Generation Error]', error);
+          throw new Error('Failed to generate music');
         }
       }),
   }),

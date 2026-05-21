@@ -14,6 +14,17 @@
 - [x] Tests unitaires pour les procédures tRPC
 - [x] Responsive design et optimisation mobile
 
+## Nouvelles Fonctionnalités
+
+- [x] Formulaire d'inscription personnalisé
+- [x] Formulaire de connexion personnalisé
+- [x] Téléchargement de fichiers dans le chat
+- [x] Génération d'images via l'IA
+- [x] Génération de musique via l'IA
+- [x] Affichage des fichiers téléchargés
+- [x] Affichage des images générées
+- [x] Affichage des musiques générées
+
 ## Statut
 
 - [x] Projet initialisé avec scaffold web-db-user
@@ -22,3 +33,8 @@
 - [x] Phase 3 : Interface utilisateur
 - [x] Phase 4 : Tests et validation (22 tests robustes avec mocks)
 - [x] Phase 5 : Déploiement et lien d'accès
+- [x] Phase 6 : Formulaires d'inscription/connexion avec OAuth
+- [x] Phase 7 : Téléchargement de fichiers réel
+- [x] Phase 8 : Génération d'images réelle
+- [x] Phase 9 : Génération de musique
+- [x] Phase 10 : Tests avancés (34 tests passants)

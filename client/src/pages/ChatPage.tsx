@@ -5,16 +5,21 @@ import { Spinner } from "@/components/ui/spinner";
 import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Paperclip, Image, Music } from "lucide-react";
 import { getLoginUrl } from "@/const";
+import { toast } from "sonner";
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Array<{ id: number; role: 'user' | 'assistant'; content: string; createdAt: Date }>>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingMusic, setGeneratingMusic] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch conversation history on mount
   const { data: historyData } = trpc.chat.history.useQuery(
@@ -77,6 +82,87 @@ export default function ChatPage() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const generateImageMutation = trpc.chat.generateImage.useMutation({
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: 'assistant',
+        content: `![Image generee](${data.url})`,
+        createdAt: new Date(),
+      }]);
+      setGeneratingImage(false);
+    },
+    onError: (error) => {
+      console.error('Image generation failed:', error);
+      toast.error('Erreur lors de la generation de l\'image');
+      setGeneratingImage(false);
+    },
+  });
+
+  const uploadFileMutation = trpc.chat.uploadFile.useMutation({
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: 'assistant',
+        content: `[Fichier telecharge: ${data.filename}](${data.url})`,
+        createdAt: new Date(),
+      }]);
+      setUploadedFiles([]);
+    },
+    onError: (error) => {
+      console.error('File upload failed:', error);
+      toast.error('Erreur lors du telechargemnt du fichier');
+    },
+  });
+
+  const generateMusicMutation = trpc.chat.generateMusic.useMutation({
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        role: 'assistant',
+        content: data.message,
+        createdAt: new Date(),
+      }]);
+      setGeneratingMusic(false);
+    },
+    onError: (error) => {
+      console.error('Music generation failed:', error);
+      toast.error('Erreur lors de la generation de musique');
+      setGeneratingMusic(false);
+    },
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const fileData = event.target?.result as string;
+        const base64Data = fileData.split(',')[1] || fileData;
+        await uploadFileMutation.mutateAsync({
+          filename: file.name,
+          fileData: base64Data,
+          mimeType: file.type,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!inputValue.trim()) return;
+    setGeneratingImage(true);
+    await generateImageMutation.mutateAsync({ prompt: inputValue });
+  };
+
+  const handleGenerateMusic = async () => {
+    if (!inputValue.trim()) return;
+    setGeneratingMusic(true);
+    await generateMusicMutation.mutateAsync({ prompt: inputValue });
   };
 
   if (authLoading) {
@@ -178,6 +264,16 @@ export default function ChatPage() {
       {/* Input Area */}
       <div className="border-t border-border bg-card shadow-lg">
         <div className="max-w-4xl mx-auto px-4 py-4">
+          {uploadedFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {uploadedFiles.map((file, idx) => (
+                <div key={idx} className="bg-secondary text-sm px-3 py-1 rounded-full flex items-center gap-2">
+                  <Paperclip className="w-3 h-3" />
+                  {file.name}
+                </div>
+              ))}
+            </div>
+          )}
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <Input
               ref={inputRef}
@@ -189,6 +285,47 @@ export default function ChatPage() {
               disabled={isLoading}
               className="flex-1 bg-input text-foreground placeholder:text-muted-foreground border border-border rounded-md focus:ring-2 focus:ring-accent focus:outline-none px-3 py-2"
             />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
+              title="Telecharger un fichier"
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGenerateImage}
+              disabled={generatingImage || !inputValue.trim()}
+              className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
+              title="Generer une image"
+            >
+              {generatingImage ? (
+                <Spinner className="w-4 h-4" />
+              ) : (
+                <Image className="w-4 h-4" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGenerateMusic}
+              disabled={generatingMusic || !inputValue.trim()}
+              className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
+              title="Generer de la musique"
+            >
+              {generatingMusic ? (
+                <Spinner className="w-4 h-4" />
+              ) : (
+                <Music className="w-4 h-4" />
+              )}
+            </Button>
             <Button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
