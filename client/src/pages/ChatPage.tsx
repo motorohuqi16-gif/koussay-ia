@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
 import { useEffect, useRef, useState } from "react";
 import { Send, MessageCircle } from "lucide-react";
+import { getLoginUrl } from "@/const";
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -97,7 +98,12 @@ export default function ChatPage() {
           <p className="text-muted-foreground mb-6">
             Connectez-vous pour commencer à converser avec votre assistant IA personnel.
           </p>
-          <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+          <Button
+            onClick={() => {
+              window.location.href = getLoginUrl();
+            }}
+            className="bg-accent hover:bg-accent/90 text-accent-foreground"
+          >
             Se connecter
           </Button>
         </div>

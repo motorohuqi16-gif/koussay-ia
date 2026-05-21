@@ -21,4 +21,4 @@
 - [x] Phase 2 : Logique serveur (tRPC + LLM)
 - [x] Phase 3 : Interface utilisateur
 - [x] Phase 4 : Tests et validation (22 tests robustes avec mocks)
-- [ ] Phase 5 : Déploiement et lien d'accès
+- [x] Phase 5 : Déploiement et lien d'accès
