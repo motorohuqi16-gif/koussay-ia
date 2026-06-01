@@ -121,9 +121,12 @@ export const appRouter = router({
       .input(z.object({ prompt: z.string().min(1).max(500) }))
       .mutation(async ({ ctx, input }) => {
         try {
+          // For now, return a message indicating music generation is in progress
+          // In the future, this could integrate with a real music generation API
+          const message = `🎵 Musique générée basée sur votre description:\n\n"${input.prompt}"\n\nLa génération de musique personnalisée est actuellement en développement. Revenez bientôt pour cette fonctionnalité !`;
           return { 
             success: true, 
-            message: `Musique generee basee sur: ${input.prompt}`,
+            message,
             url: null
           };
         } catch (error) {

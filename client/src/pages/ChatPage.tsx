@@ -86,34 +86,44 @@ export default function ChatPage() {
 
   const generateImageMutation = trpc.chat.generateImage.useMutation({
     onSuccess: (data) => {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        role: 'assistant',
-        content: `![Image generee](${data.url})`,
-        createdAt: new Date(),
-      }]);
+      if (data.url) {
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          role: 'assistant',
+          content: `![Image generee](${data.url})`,
+          createdAt: new Date(),
+        }]);
+      } else {
+        toast.error('La génération d\'image a échoué. Vérifiez votre connexion.');
+      }
       setGeneratingImage(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Image generation failed:', error);
-      toast.error('Erreur lors de la generation de l\'image');
+      const errorMsg = error?.message || 'Erreur lors de la génération de l\'image';
+      toast.error(errorMsg);
       setGeneratingImage(false);
     },
   });
 
   const uploadFileMutation = trpc.chat.uploadFile.useMutation({
     onSuccess: (data) => {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        role: 'assistant',
-        content: `[Fichier telecharge: ${data.filename}](${data.url})`,
-        createdAt: new Date(),
-      }]);
-      setUploadedFiles([]);
+      if (data.url) {
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          role: 'assistant',
+          content: `📎 [${data.filename}](${data.url})`,
+          createdAt: new Date(),
+        }]);
+        setUploadedFiles([]);
+      } else {
+        toast.error('L\'upload du fichier a échoué.');
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('File upload failed:', error);
-      toast.error('Erreur lors du telechargemnt du fichier');
+      const errorMsg = error?.message || 'Erreur lors du téléchargement du fichier';
+      toast.error(errorMsg);
     },
   });
 
@@ -127,9 +137,10 @@ export default function ChatPage() {
       }]);
       setGeneratingMusic(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Music generation failed:', error);
-      toast.error('Erreur lors de la generation de musique');
+      const errorMsg = error?.message || 'Erreur lors de la génération de musique';
+      toast.error(errorMsg);
       setGeneratingMusic(false);
     },
   });
@@ -139,28 +150,44 @@ export default function ChatPage() {
     if (!files || files.length === 0) return;
 
     for (const file of Array.from(files)) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`Le fichier ${file.name} est trop volumineux (max 10MB)`);
+        continue;
+      }
+
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const fileData = event.target?.result as string;
-        const base64Data = fileData.split(',')[1] || fileData;
-        await uploadFileMutation.mutateAsync({
-          filename: file.name,
-          fileData: base64Data,
-          mimeType: file.type,
-        });
+        try {
+          const fileData = event.target?.result as string;
+          const base64Data = fileData.split(',')[1] || fileData;
+          await uploadFileMutation.mutateAsync({
+            filename: file.name,
+            fileData: base64Data,
+            mimeType: file.type,
+          });
+        } catch (error) {
+          console.error('File upload error:', error);
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleGenerateImage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim()) {
+      toast.error('Veuillez entrer une description pour générer une image');
+      return;
+    }
     setGeneratingImage(true);
     await generateImageMutation.mutateAsync({ prompt: inputValue });
   };
 
   const handleGenerateMusic = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim()) {
+      toast.error('Veuillez entrer une description pour générer de la musique');
+      return;
+    }
     setGeneratingMusic(true);
     await generateMusicMutation.mutateAsync({ prompt: inputValue });
   };
