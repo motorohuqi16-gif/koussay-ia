@@ -161,8 +161,12 @@ export default function ChatPage() {
         try {
           const fileData = event.target?.result as string;
           const base64Data = fileData.split(',')[1] || fileData;
+          // Convertir le nom de fichier en ASCII seulement (remplacer les caractères spéciaux)
+          const asciiFilename = file.name
+            .replace(/[^a-zA-Z0-9._-]/g, '_')
+            .substring(0, 255);
           await uploadFileMutation.mutateAsync({
-            filename: file.name,
+            filename: asciiFilename,
             fileData: base64Data,
             mimeType: file.type,
           });
