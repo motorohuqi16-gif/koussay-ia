@@ -38,3 +38,9 @@
 - [x] Phase 8 : Génération d'images réelle
 - [x] Phase 9 : Génération de musique
 - [x] Phase 10 : Tests avancés (34 tests passants)
+
+## Prochaines Étapes (Phase 11-13)
+
+- [ ] Ajouter une barre de progression pour les uploads de fichiers
+- [ ] Créer l'historique persistant avec suppression de conversations
+- [ ] Implémenter la vraie génération de musique avec API

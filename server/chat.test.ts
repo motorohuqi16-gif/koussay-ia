@@ -113,11 +113,11 @@ describe("chat.sendMessage", () => {
 
       expect(result).toBeDefined();
       expect(result.userMessage).toBeDefined();
-      expect(result.aiMessage).toBeDefined();
+      expect(result.assistantMessage).toBeDefined();
       expect(result.userMessage.role).toBe("user");
-      expect(result.aiMessage.role).toBe("assistant");
+      expect(result.assistantMessage.role).toBe("assistant");
       expect(result.userMessage.content).toBe("Hello, how are you?");
-      expect(result.aiMessage.content).toBeTruthy();
+      expect(result.assistantMessage.content).toBeTruthy();
     } catch (error) {
       // LLM integration might fail in test environment, but structure should be valid
       console.log("Note: LLM integration test skipped in test environment");
@@ -132,7 +132,7 @@ describe("chat.sendMessage", () => {
       const result = await caller.chat.sendMessage({ message: "Test message" });
 
       expect(result.userMessage.userId).toBe(42);
-      expect(result.aiMessage.userId).toBe(42);
+      expect(result.assistantMessage.userId).toBe(42);
     } catch (error) {
       console.log("Note: Database test skipped in test environment");
     }
@@ -150,7 +150,7 @@ describe("chat.sendMessage", () => {
       // Send second message - should include first message in context
       const result2 = await caller.chat.sendMessage({ message: "Second message" });
       expect(result2.userMessage).toBeDefined();
-      expect(result2.aiMessage).toBeDefined();
+      expect(result2.assistantMessage).toBeDefined();
     } catch (error) {
       console.log("Note: Conversation context test skipped in test environment");
     }
@@ -164,8 +164,8 @@ describe("chat.sendMessage", () => {
       const result = await caller.chat.sendMessage({ message: "Test" });
 
       // Should return a response even if LLM fails
-      expect(result.aiMessage).toBeDefined();
-      expect(result.aiMessage.content).toBeTruthy();
+      expect(result.assistantMessage).toBeDefined();
+      expect(result.assistantMessage.content).toBeTruthy();
     } catch (error) {
       console.log("Note: Error handling test skipped in test environment");
     }

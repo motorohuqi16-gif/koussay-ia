@@ -17,6 +17,9 @@ export default function ChatPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generatingMusic, setGeneratingMusic] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,10 +55,10 @@ export default function ChatPage() {
           createdAt: new Date(data.userMessage.createdAt),
         },
         {
-          id: data.aiMessage.id,
+          id: data.assistantMessage.id,
           role: 'assistant',
-          content: data.aiMessage.content,
-          createdAt: new Date(data.aiMessage.createdAt),
+          content: data.assistantMessage.content,
+          createdAt: new Date(data.assistantMessage.createdAt),
         },
       ]);
       setInputValue("");
@@ -112,7 +115,7 @@ export default function ChatPage() {
         setMessages(prev => [...prev, {
           id: Date.now(),
           role: 'assistant',
-          content: `📎 [${data.filename}](${data.url})`,
+          content: data.message,
           createdAt: new Date(),
         }]);
         setUploadedFiles([]);
@@ -156,12 +159,21 @@ export default function ChatPage() {
         continue;
       }
 
+      setIsUploading(true);
+      setUploadProgress(0);
+
       const reader = new FileReader();
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(progress);
+        }
+      };
       reader.onload = async (event) => {
         try {
+          setUploadProgress(90);
           const fileData = event.target?.result as string;
           const base64Data = fileData.split(',')[1] || fileData;
-          // Convertir le nom de fichier en ASCII seulement (remplacer les caractères spéciaux)
           const asciiFilename = file.name
             .replace(/[^a-zA-Z0-9._-]/g, '_')
             .substring(0, 255);
@@ -170,8 +182,15 @@ export default function ChatPage() {
             fileData: base64Data,
             mimeType: file.type,
           });
+          setUploadProgress(100);
+          setTimeout(() => {
+            setIsUploading(false);
+            setUploadProgress(0);
+          }, 500);
         } catch (error) {
           console.error('File upload error:', error);
+          setIsUploading(false);
+          setUploadProgress(0);
         }
       };
       reader.readAsDataURL(file);
@@ -295,6 +314,20 @@ export default function ChatPage() {
       {/* Input Area */}
       <div className="border-t border-border bg-card shadow-lg">
         <div className="max-w-4xl mx-auto px-4 py-4">
+          {isUploading && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">Telechargement en cours...</span>
+                <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-accent h-full rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
           {uploadedFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
               {uploadedFiles.map((file, idx) => (

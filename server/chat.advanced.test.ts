@@ -110,7 +110,7 @@ describe("chat.uploadFile", () => {
       expect(result).toHaveProperty("success");
       expect(result).toHaveProperty("url");
       expect(result).toHaveProperty("key");
-      expect(result.filename).toBe("test.txt");
+      expect(result).toHaveProperty("message");
     } catch (error: any) {
       if (error.message === "timeout" || error.message.includes("storage")) {
         console.log("File upload test skipped (no storage available)");
@@ -129,6 +129,7 @@ describe("chat.uploadFile", () => {
         caller.chat.uploadFile({
           filename: "test.bin",
           fileData: Buffer.from("binary data").toString("base64"),
+          mimeType: "application/octet-stream",
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
       ]);
@@ -178,7 +179,7 @@ describe("chat.generateMusic", () => {
     expect(result).toHaveProperty("success");
     expect(result.success).toBe(true);
     expect(result).toHaveProperty("message");
-    expect(result.message).toContain("Musique generee");
+    expect(result.message).toContain("Génération de Musique");
   }, { timeout: 10000 });
 });
 

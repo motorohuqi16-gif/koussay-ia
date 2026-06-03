@@ -131,9 +131,9 @@ describe("chat.sendMessage - robust tests", () => {
     const result = await caller.chat.sendMessage({ message: "Hello, how are you?" });
 
     expect(result.userMessage).toEqual(mockUserMessage);
-    expect(result.aiMessage).toEqual(mockAiMessage);
+    expect(result.assistantMessage).toEqual(mockAiMessage);
     expect(result.userMessage.role).toBe("user");
-    expect(result.aiMessage.role).toBe("assistant");
+    expect(result.assistantMessage.role).toBe("assistant");
   });
 
   it("saves user message with correct content", async () => {
@@ -247,8 +247,8 @@ describe("chat.sendMessage - robust tests", () => {
     const result = await caller.chat.sendMessage({ message: "Test" });
 
     // Even if LLM fails, we should get a response message
-    expect(result.aiMessage).toBeDefined();
-    expect(result.aiMessage.content).toBeTruthy();
+    expect(result.assistantMessage).toBeDefined();
+    expect(result.assistantMessage.content).toBeTruthy();
   });
 
   it("persists both user and AI messages", async () => {
@@ -315,6 +315,6 @@ describe("chat.sendMessage - robust tests", () => {
     const result = await caller.chat.sendMessage({ message: "Test" });
 
     expect(result.userMessage.userId).toBe(42);
-    expect(result.aiMessage.userId).toBe(42);
+    expect(result.assistantMessage.userId).toBe(42);
   });
 });

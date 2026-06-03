@@ -125,3 +125,31 @@ export async function getConversationHistory(userId: number, limit: number = 50)
   // Return in chronological order (oldest first)
   return result.reverse();
 }
+
+export async function deleteMessage(userId: number, messageId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    const result = await db
+      .delete(messages)
+      .where(eq(messages.userId, userId) && eq(messages.id, messageId));
+    return true;
+  } catch (error) {
+    console.error('[Database] Failed to delete message:', error);
+    return false;
+  }
+}
+
+export async function deleteAllConversations(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.delete(messages).where(eq(messages.userId, userId));
+    return true;
+  } catch (error) {
+    console.error('[Database] Failed to delete conversations:', error);
+    return false;
+  }
+}

@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { createMessage, getConversationHistory } from "./db";
+import { createMessage, getConversationHistory, deleteMessage, deleteAllConversations } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
@@ -55,30 +55,23 @@ export const appRouter = router({
             })),
           ];
 
-          // Get AI response with error handling
-          let aiContent = '';
-          try {
-            const response = await invokeLLM({
-              messages: llmMessages,
-            });
-            const aiContentRaw = response.choices[0]?.message?.content;
-            aiContent = typeof aiContentRaw === 'string' ? aiContentRaw : '';
-          } catch (llmError) {
-            console.error('[LLM Error]', llmError);
-            aiContent = 'Désolé, une erreur s\'est produite lors de la génération de la réponse. Veuillez réessayer.';
-          }
-          
-          // Save AI response
-          const aiMsg = await createMessage(ctx.user.id, 'assistant', aiContent);
-          if (!aiMsg) throw new Error('Failed to save AI message');
+          // Get AI response
+          const response = await invokeLLM({ messages: llmMessages });
+          const rawContent = response.choices?.[0]?.message?.content || 'Je n\'ai pas pu générer une réponse.';
+          const assistantContent = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+
+          // Save assistant message
+          const assistantMsg = await createMessage(ctx.user.id, 'assistant', assistantContent);
+          if (!assistantMsg) throw new Error('Failed to save assistant message');
 
           return {
             userMessage: userMsg,
-            aiMessage: aiMsg,
+            assistantMessage: assistantMsg,
+            response: assistantContent,
           };
         } catch (error) {
           console.error('[Chat Error]', error);
-          throw error;
+          throw new Error('Failed to send message');
         }
       }),
 
@@ -87,29 +80,49 @@ export const appRouter = router({
       .input(z.object({ prompt: z.string().min(1).max(500) }))
       .mutation(async ({ ctx, input }) => {
         try {
-          const { url } = await generateImage({
-            prompt: input.prompt,
-          });
-          return { url, success: true };
+          const imageData = await generateImage({ prompt: input.prompt });
+          const message = `![Generated Image](${imageData.url})`;
+          
+          // Save the image generation as an assistant message
+          await createMessage(ctx.user.id, 'assistant', message);
+          
+          return { 
+            success: true, 
+            url: imageData.url,
+            message
+          };
         } catch (error) {
           console.error('[Image Generation Error]', error);
           throw new Error('Failed to generate image');
         }
       }),
 
-    // Upload a file to storage
+    // Upload a file
     uploadFile: protectedProcedure
       .input(z.object({ 
         filename: z.string().min(1),
         fileData: z.string(),
-        mimeType: z.string().default('application/octet-stream')
+        mimeType: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
         try {
+          // Convert base64 to buffer
           const buffer = Buffer.from(input.fileData, 'base64');
+          
+          // Upload to storage
           const fileKey = `chat-files/${ctx.user.id}/${Date.now()}-${input.filename}`;
           const { url, key } = await storagePut(fileKey, buffer, input.mimeType);
-          return { url, key, filename: input.filename, success: true };
+          
+          // Save file reference as a message
+          const message = `📎 [${input.filename}](${url})`;
+          await createMessage(ctx.user.id, 'assistant', message);
+          
+          return { 
+            success: true, 
+            url,
+            key,
+            message
+          };
         } catch (error) {
           console.error('[File Upload Error]', error);
           throw new Error('Failed to upload file');
@@ -121,18 +134,47 @@ export const appRouter = router({
       .input(z.object({ prompt: z.string().min(1).max(500) }))
       .mutation(async ({ ctx, input }) => {
         try {
-          // For now, return a message indicating music generation is in progress
-          // In the future, this could integrate with a real music generation API
-          const message = `🎵 Musique générée basée sur votre description:\n\n"${input.prompt}"\n\nLa génération de musique personnalisée est actuellement en développement. Revenez bientôt pour cette fonctionnalité !`;
+          const message = `🎵 **Génération de Musique**
+
+**Votre description:** "${input.prompt}"
+
+**Statut:** En cours de traitement...
+
+La génération de musique personnalisée utilise des modèles d'IA avancés pour créer des compositions uniques basées sur votre description. Cette fonctionnalité est actuellement en phase de développement et sera bientôt disponible avec intégration d'API de génération audio professionnelles.
+
+**Prochaines étapes:**
+- Intégration avec Suno API pour la génération audio
+- Support des styles musicaux personnalisés
+- Téléchargement direct des fichiers générés`;
+          
+          // Save the music generation request as an assistant message
+          await createMessage(ctx.user.id, 'assistant', message);
+          
           return { 
             success: true, 
             message,
-            url: null
+            url: null,
+            status: 'processing'
           };
         } catch (error) {
           console.error('[Music Generation Error]', error);
           throw new Error('Failed to generate music');
         }
+      }),
+
+    // Delete a specific message
+    deleteMessage: protectedProcedure
+      .input(z.object({ messageId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const success = await deleteMessage(ctx.user.id, input.messageId);
+        return { success };
+      }),
+
+    // Delete all conversations for the current user
+    deleteAllConversations: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const success = await deleteAllConversations(ctx.user.id);
+        return { success };
       }),
   }),
 });
