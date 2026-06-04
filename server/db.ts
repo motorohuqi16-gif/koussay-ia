@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, messages, Message, InsertMessage } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -131,9 +131,9 @@ export async function deleteMessage(userId: number, messageId: number): Promise<
   if (!db) return false;
 
   try {
-    const result = await db
+    await db
       .delete(messages)
-      .where(eq(messages.userId, userId) && eq(messages.id, messageId));
+      .where(and(eq(messages.userId, userId), eq(messages.id, messageId)));
     return true;
   } catch (error) {
     console.error('[Database] Failed to delete message:', error);

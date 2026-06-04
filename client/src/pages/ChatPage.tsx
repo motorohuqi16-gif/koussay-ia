@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { trpc } from "@/lib/trpc";
 import { Streamdown } from "streamdown";
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageCircle, Paperclip, Image, Music } from "lucide-react";
+import { Send, MessageCircle, Paperclip, Image, Music, Trash2 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
@@ -215,6 +215,28 @@ export default function ChatPage() {
     await generateMusicMutation.mutateAsync({ prompt: inputValue });
   };
 
+  const deleteMessageMutation = trpc.chat.deleteMessage.useMutation({
+    onSuccess: () => {
+      setMessages(prev => prev.filter(m => m.id !== showDeleteConfirm));
+      setShowDeleteConfirm(null);
+      toast.success('Message supprimé');
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression');
+      setShowDeleteConfirm(null);
+    },
+  });
+
+  const deleteAllMutation = trpc.chat.deleteAllConversations.useMutation({
+    onSuccess: () => {
+      setMessages([]);
+      toast.success('Historique supprimé');
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression');
+    },
+  });
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -279,7 +301,7 @@ export default function ChatPage() {
             messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 group ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-2xl px-4 py-3 rounded-lg ${
@@ -296,6 +318,13 @@ export default function ChatPage() {
                     <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                   )}
                 </div>
+                <button
+                  onClick={() => setShowDeleteConfirm(message.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded text-destructive"
+                  title="Supprimer ce message"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))
           )}
@@ -403,9 +432,25 @@ export default function ChatPage() {
               <span className="hidden sm:inline">Envoyer</span>
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Le Koussay IA • Powered by Advanced AI
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-muted-foreground text-center flex-1">
+              Le Koussay IA • Powered by Advanced AI
+            </p>
+            {messages.length > 0 && (
+              <Button
+                type="button"
+                onClick={() => {
+                  if (confirm('Supprimer tout l\'historique ?')) {
+                    deleteAllMutation.mutate();
+                  }
+                }}
+                className="bg-destructive/10 hover:bg-destructive/20 text-destructive px-2 py-1 text-xs"
+                title="Supprimer tout l'historique"
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

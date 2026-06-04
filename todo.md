@@ -41,6 +41,6 @@
 
 ## Prochaines Étapes (Phase 11-13)
 
-- [ ] Ajouter une barre de progression pour les uploads de fichiers
-- [ ] Créer l'historique persistant avec suppression de conversations
-- [ ] Implémenter la vraie génération de musique avec API
+- [x] Ajouter une barre de progression pour les uploads de fichiers
+- [x] Créer l'historique persistant avec suppression de conversations
+- [x] Implémenter la vraie génération de musique avec API
