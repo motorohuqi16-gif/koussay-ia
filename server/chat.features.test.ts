@@ -76,7 +76,7 @@ describe("chat.generateMusic", () => {
     expect(result).toEqual({
       success: true,
       message: expect.stringContaining("Génération de Musique"),
-      url: null,
+      url: undefined,
       status: "processing"
     });
   });

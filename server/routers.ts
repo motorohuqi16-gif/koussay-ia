@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createMessage, getConversationHistory, deleteMessage, deleteAllConversations } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
+import { generateMusic } from "./_core/musicGeneration";
 import { storagePut } from "./storage";
 
 export const appRouter = router({
@@ -134,27 +135,16 @@ export const appRouter = router({
       .input(z.object({ prompt: z.string().min(1).max(500) }))
       .mutation(async ({ ctx, input }) => {
         try {
-          const message = `🎵 **Génération de Musique**
-
-**Votre description:** "${input.prompt}"
-
-**Statut:** En cours de traitement...
-
-La génération de musique personnalisée utilise des modèles d'IA avancés pour créer des compositions uniques basées sur votre description. Cette fonctionnalité est actuellement en phase de développement et sera bientôt disponible avec intégration d'API de génération audio professionnelles.
-
-**Prochaines étapes:**
-- Intégration avec Suno API pour la génération audio
-- Support des styles musicaux personnalisés
-- Téléchargement direct des fichiers générés`;
+          const result = await generateMusic({ prompt: input.prompt });
           
           // Save the music generation request as an assistant message
-          await createMessage(ctx.user.id, 'assistant', message);
+          await createMessage(ctx.user.id, 'assistant', result.message);
           
           return { 
-            success: true, 
-            message,
-            url: null,
-            status: 'processing'
+            success: result.status !== 'error', 
+            message: result.message,
+            url: result.url,
+            status: result.status
           };
         } catch (error) {
           console.error('[Music Generation Error]', error);

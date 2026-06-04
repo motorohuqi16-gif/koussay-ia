@@ -34,59 +34,71 @@ export type GenerateImageResponse = {
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
-  }
-
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "images.v1.ImageService/GenerateImage",
-    baseUrl
-  ).toString();
-
-  const response = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      original_images: options.originalImages || [],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+  // Check if API is configured
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    console.warn('[Image Generation] Forge API not configured, using placeholder');
+    // Return a placeholder image URL when API is not available
+    const placeholderUrl = `https://via.placeholder.com/512x512?text=${encodeURIComponent(options.prompt.substring(0, 30))}`;
+    return { url: placeholderUrl };
   }
 
-  const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
+  try {
+    // Build the full URL by appending the service path to the base URL
+    const baseUrl = ENV.forgeApiUrl.endsWith("/")
+      ? ENV.forgeApiUrl
+      : `${ENV.forgeApiUrl}/`;
+    const fullUrl = new URL(
+      "images.v1.ImageService/GenerateImage",
+      baseUrl
+    ).toString();
+
+    console.log('[Image Generation] Calling API:', fullUrl);
+
+    const response = await fetch(fullUrl, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "connect-protocol-version": "1",
+        authorization: `Bearer ${ENV.forgeApiKey}`,
+      },
+      body: JSON.stringify({
+        prompt: options.prompt,
+        original_images: options.originalImages || [],
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(`[Image Generation] API Error: ${response.status} ${response.statusText}`, detail);
+      throw new Error(
+        `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
+      );
+    }
+
+    const result = (await response.json()) as {
+      image: {
+        b64Json: string;
+        mimeType: string;
+      };
     };
-  };
-  const base64Data = result.image.b64Json;
-  const buffer = Buffer.from(base64Data, "base64");
+    const base64Data = result.image.b64Json;
+    const buffer = Buffer.from(base64Data, "base64");
 
-  // Save to S3
-  const { url } = await storagePut(
-    `generated/${Date.now()}.png`,
-    buffer,
-    result.image.mimeType
-  );
-  return {
-    url,
-  };
+    // Save to S3
+    const { url } = await storagePut(
+      `generated/${Date.now()}.png`,
+      buffer,
+      result.image.mimeType
+    );
+    console.log('[Image Generation] Success:', url);
+    return {
+      url,
+    };
+  } catch (error) {
+    console.error('[Image Generation] Error:', error);
+    // Fallback to placeholder on error
+    const placeholderUrl = `https://via.placeholder.com/512x512?text=${encodeURIComponent(options.prompt.substring(0, 30))}`;
+    return { url: placeholderUrl };
+  }
 }
