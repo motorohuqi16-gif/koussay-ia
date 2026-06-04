@@ -31,14 +31,39 @@ export type GenerateImageResponse = {
   url?: string;
 };
 
+// Generate a simple SVG placeholder image
+function generatePlaceholderSVG(prompt: string): string {
+  const truncatedPrompt = prompt.substring(0, 50);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#grad)"/>
+    <circle cx="256" cy="200" r="80" fill="#60a5fa" opacity="0.8"/>
+    <path d="M 100 400 Q 256 300 412 400 L 412 512 L 100 512 Z" fill="#93c5fd" opacity="0.7"/>
+    <text x="256" y="480" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">
+      Generated Image
+    </text>
+    <text x="256" y="50" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">
+      ${truncatedPrompt}
+    </text>
+  </svg>`;
+  
+  const base64 = Buffer.from(svg).toString('base64');
+  return `data:image/svg+xml;base64,${base64}`;
+}
+
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
   // Check if API is configured
   if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    console.warn('[Image Generation] Forge API not configured, using placeholder');
-    // Return a placeholder image URL when API is not available
-    const placeholderUrl = `https://via.placeholder.com/512x512?text=${encodeURIComponent(options.prompt.substring(0, 30))}`;
+    console.warn('[Image Generation] Forge API not configured, using SVG placeholder');
+    // Return a data URL with SVG placeholder when API is not available
+    const placeholderUrl = generatePlaceholderSVG(options.prompt);
     return { url: placeholderUrl };
   }
 
@@ -97,8 +122,8 @@ export async function generateImage(
     };
   } catch (error) {
     console.error('[Image Generation] Error:', error);
-    // Fallback to placeholder on error
-    const placeholderUrl = `https://via.placeholder.com/512x512?text=${encodeURIComponent(options.prompt.substring(0, 30))}`;
+    // Fallback to SVG placeholder on error
+    const placeholderUrl = generatePlaceholderSVG(options.prompt);
     return { url: placeholderUrl };
   }
 }

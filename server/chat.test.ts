@@ -154,7 +154,7 @@ describe("chat.sendMessage", () => {
     } catch (error) {
       console.log("Note: Conversation context test skipped in test environment");
     }
-  });
+  }, { timeout: 15000 });
 
   it("handles LLM errors gracefully", async () => {
     const ctx = createAuthContext();

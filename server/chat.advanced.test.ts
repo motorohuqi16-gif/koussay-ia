@@ -75,6 +75,33 @@ describe("chat.generateImage", () => {
       }
     }
   }, { timeout: 10000 });
+
+  it("should return SVG base64 fallback or storage URL", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // This test validates that either SVG fallback or storage URL is returned
+    const result = await caller.chat.generateImage({ prompt: "Test SVG fallback" });
+    
+    expect(result).toHaveProperty("url");
+    const url = result.url as string;
+    
+    // Check if it's either a data URL with SVG or a storage URL
+    const isSvgFallback = url.match(/^data:image\/svg\+xml;base64,/);
+    const isStorageUrl = url.includes("/manus-storage/");
+    
+    expect(isSvgFallback || isStorageUrl).toBe(true);
+    
+    // If it's a SVG fallback, verify it can be decoded
+    if (isSvgFallback) {
+      const base64Part = url.replace(/^data:image\/svg\+xml;base64,/, "");
+      const decodedSvg = Buffer.from(base64Part, "base64").toString("utf-8");
+      
+      // Verify it contains SVG elements
+      expect(decodedSvg).toContain("<svg");
+      expect(decodedSvg).toContain("Test SVG fallback");
+    }
+  }, { timeout: 10000 });
 });
 
 describe("chat.uploadFile", () => {

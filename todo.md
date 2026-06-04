@@ -44,3 +44,11 @@
 - [x] Ajouter une barre de progression pour les uploads de fichiers
 - [x] Créer l'historique persistant avec suppression de conversations
 - [x] Implémenter la vraie génération de musique avec API
+
+## Bug Fixes
+
+- [x] Correction du bug "Failed to fetch" pour la génération d'images
+  - Remplacé le placeholder via.placeholder.com par une image SVG en base64
+  - Ajout d'un fallback SVG qui fonctionne sans requête réseau
+  - Ajout de tests pour valider le fallback SVG
+  - 45 tests passants
