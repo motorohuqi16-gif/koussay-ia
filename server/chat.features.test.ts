@@ -73,12 +73,14 @@ describe("chat.generateMusic", () => {
       prompt: "Jazz music with piano" 
     });
     
-    expect(result).toEqual({
-      success: true,
-      message: expect.stringContaining("Génération de Musique"),
-      url: undefined,
-      status: "processing"
-    });
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("processing");
+    expect(result.url).toBeUndefined();
+    expect(result.message).toHaveProperty("id");
+    expect(result.message).toHaveProperty("content");
+    expect(result.message.role).toBe("assistant");
+    // The content should be a string with music generation info
+    expect(typeof result.message.content).toBe("string");
   });
 
   it("should reject empty prompt", async () => {
@@ -132,6 +134,22 @@ describe("chat.generateImage", () => {
       expect(error).toBeDefined();
     }
   });
+
+  it("should return a saved message on success", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    try {
+      const result = await caller.chat.generateImage({ prompt: "A beautiful sunset" });
+      expect(result.success).toBe(true);
+      expect(result.message).toHaveProperty("id");
+      expect(result.message).toHaveProperty("content");
+      expect(result.message.role).toBe("assistant");
+    } catch (error) {
+      // Expected if Forge API is not available
+      expect(error).toBeDefined();
+    }
+  }, { timeout: 10000 });
 });
 
 describe("chat.uploadFile", () => {
@@ -165,6 +183,10 @@ describe("chat.uploadFile", () => {
       });
       // If it succeeds, great; if it fails due to API, that's expected
       expect(result).toHaveProperty('success');
+      if (result.message && typeof result.message === 'object') {
+        expect(result.message).toHaveProperty('id');
+        expect(result.message).toHaveProperty('content');
+      }
     } catch (error) {
       // Expected if Forge API is not available
       expect(error).toBeDefined();

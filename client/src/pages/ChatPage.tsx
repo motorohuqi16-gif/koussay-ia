@@ -14,7 +14,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Array<{ id: number; role: 'user' | 'assistant'; content: string; createdAt: Date }>>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generatingMusic, setGeneratingMusic] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -67,6 +66,7 @@ export default function ChatPage() {
     },
     onError: (error) => {
       console.error("Failed to send message:", error);
+      toast.error("Erreur lors de l'envoi du message");
       setIsLoading(false);
     },
   });
@@ -89,17 +89,19 @@ export default function ChatPage() {
 
   const generateImageMutation = trpc.chat.generateImage.useMutation({
     onSuccess: (data) => {
-      if (data.url) {
+      if (data.message) {
         setMessages(prev => [...prev, {
-          id: Date.now(),
+          id: data.message.id,
           role: 'assistant',
-          content: `![Image generee](${data.url})`,
-          createdAt: new Date(),
+          content: data.message.content,
+          createdAt: new Date(data.message.createdAt),
         }]);
+        toast.success('Image générée avec succès');
       } else {
-        toast.error('La génération d\'image a échoué. Vérifiez votre connexion.');
+        toast.error('La génération d\'image a échoué.');
       }
       setGeneratingImage(false);
+      setInputValue("");
     },
     onError: (error: any) => {
       console.error('Image generation failed:', error);
@@ -111,14 +113,14 @@ export default function ChatPage() {
 
   const uploadFileMutation = trpc.chat.uploadFile.useMutation({
     onSuccess: (data) => {
-      if (data.url) {
+      if (data.message) {
         setMessages(prev => [...prev, {
-          id: Date.now(),
+          id: data.message.id,
           role: 'assistant',
-          content: data.message,
-          createdAt: new Date(),
+          content: data.message.content,
+          createdAt: new Date(data.message.createdAt),
         }]);
-        setUploadedFiles([]);
+        toast.success('Fichier téléchargé avec succès');
       } else {
         toast.error('L\'upload du fichier a échoué.');
       }
@@ -132,13 +134,19 @@ export default function ChatPage() {
 
   const generateMusicMutation = trpc.chat.generateMusic.useMutation({
     onSuccess: (data) => {
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        role: 'assistant',
-        content: data.message,
-        createdAt: new Date(),
-      }]);
+      if (data.message) {
+        setMessages(prev => [...prev, {
+          id: data.message.id,
+          role: 'assistant',
+          content: data.message.content,
+          createdAt: new Date(data.message.createdAt),
+        }]);
+        toast.success('Musique générée avec succès');
+      } else {
+        toast.error('La génération de musique a échoué.');
+      }
       setGeneratingMusic(false);
+      setInputValue("");
     },
     onError: (error: any) => {
       console.error('Music generation failed:', error);
@@ -195,6 +203,8 @@ export default function ChatPage() {
       };
       reader.readAsDataURL(file);
     }
+    // Reset file input
+    e.currentTarget.value = '';
   };
 
   const handleGenerateImage = async () => {
@@ -336,6 +346,27 @@ export default function ChatPage() {
               </div>
             </div>
           )}
+          {showDeleteConfirm !== null && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-card border border-border rounded-lg p-6 max-w-sm mx-4">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Supprimer ce message ?</h3>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="bg-secondary hover:bg-secondary/80 text-foreground"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => deleteMessageMutation.mutate({ messageId: showDeleteConfirm })}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  >
+                    Supprimer
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -346,7 +377,7 @@ export default function ChatPage() {
           {isUploading && (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">Telechargement en cours...</span>
+                <span className="text-sm font-medium text-foreground">Téléchargement en cours...</span>
                 <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
@@ -357,16 +388,6 @@ export default function ChatPage() {
               </div>
             </div>
           )}
-          {uploadedFiles.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {uploadedFiles.map((file, idx) => (
-                <div key={idx} className="bg-secondary text-sm px-3 py-1 rounded-full flex items-center gap-2">
-                  <Paperclip className="w-3 h-3" />
-                  {file.name}
-                </div>
-              ))}
-            </div>
-          )}
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <Input
               ref={inputRef}
@@ -375,7 +396,7 @@ export default function ChatPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading}
+              disabled={isLoading || generatingImage || generatingMusic || isUploading}
               className="flex-1 bg-input text-foreground placeholder:text-muted-foreground border border-border rounded-md focus:ring-2 focus:ring-accent focus:outline-none px-3 py-2"
             />
             <input
@@ -388,17 +409,18 @@ export default function ChatPage() {
             <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || generatingImage || generatingMusic || isUploading}
               className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
-              title="Telecharger un fichier"
+              title="Télécharger un fichier"
             >
               <Paperclip className="w-4 h-4" />
             </Button>
             <Button
               type="button"
               onClick={handleGenerateImage}
-              disabled={generatingImage || !inputValue.trim()}
+              disabled={generatingImage || !inputValue.trim() || isLoading || isUploading}
               className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
-              title="Generer une image"
+              title="Générer une image"
             >
               {generatingImage ? (
                 <Spinner className="w-4 h-4" />
@@ -409,9 +431,9 @@ export default function ChatPage() {
             <Button
               type="button"
               onClick={handleGenerateMusic}
-              disabled={generatingMusic || !inputValue.trim()}
+              disabled={generatingMusic || !inputValue.trim() || isLoading || isUploading}
               className="bg-secondary hover:bg-secondary/80 text-foreground px-3"
-              title="Generer de la musique"
+              title="Générer de la musique"
             >
               {generatingMusic ? (
                 <Spinner className="w-4 h-4" />
@@ -421,7 +443,7 @@ export default function ChatPage() {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !inputValue.trim()}
+              disabled={isLoading || !inputValue.trim() || generatingImage || generatingMusic || isUploading}
               className="bg-accent hover:bg-accent/90 text-accent-foreground px-6 gap-2"
             >
               {isLoading ? (

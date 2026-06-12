@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import * as db from "./db";
+import * as llm from "./_core/llm";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -124,6 +125,10 @@ describe("chat.sendMessage - robust tests", () => {
       .mockResolvedValueOnce(mockAiMessage);
 
     vi.spyOn(db, "getConversationHistory").mockResolvedValue([]);
+    
+    vi.spyOn(llm, "invokeLLM").mockResolvedValue({
+      choices: [{ message: { content: "I'm doing well, thank you for asking!" } }],
+    } as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -159,6 +164,10 @@ describe("chat.sendMessage - robust tests", () => {
       .mockResolvedValueOnce(mockAiMessage);
 
     vi.spyOn(db, "getConversationHistory").mockResolvedValue([]);
+    
+    vi.spyOn(llm, "invokeLLM").mockResolvedValue({
+      choices: [{ message: { content: "Response" } }],
+    } as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -209,6 +218,10 @@ describe("chat.sendMessage - robust tests", () => {
     const getHistorySpy = vi
       .spyOn(db, "getConversationHistory")
       .mockResolvedValue(mockHistory);
+    
+    vi.spyOn(llm, "invokeLLM").mockResolvedValue({
+      choices: [{ message: { content: "Response" } }],
+    } as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -240,6 +253,8 @@ describe("chat.sendMessage - robust tests", () => {
       .mockResolvedValueOnce(mockAiMessage);
 
     vi.spyOn(db, "getConversationHistory").mockResolvedValue([]);
+    
+    vi.spyOn(llm, "invokeLLM").mockRejectedValue(new Error("LLM Error"));
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -274,6 +289,10 @@ describe("chat.sendMessage - robust tests", () => {
       .mockResolvedValueOnce(mockAiMessage);
 
     vi.spyOn(db, "getConversationHistory").mockResolvedValue([]);
+    
+    vi.spyOn(llm, "invokeLLM").mockResolvedValue({
+      choices: [{ message: { content: "AI response" } }],
+    } as any);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -308,6 +327,10 @@ describe("chat.sendMessage - robust tests", () => {
       .mockResolvedValueOnce(mockAiMessage);
 
     vi.spyOn(db, "getConversationHistory").mockResolvedValue([]);
+    
+    vi.spyOn(llm, "invokeLLM").mockResolvedValue({
+      choices: [{ message: { content: "Response" } }],
+    } as any);
 
     const ctx = createAuthContext(42);
     const caller = appRouter.createCaller(ctx);

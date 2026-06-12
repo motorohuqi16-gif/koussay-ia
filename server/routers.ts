@@ -57,9 +57,16 @@ export const appRouter = router({
           ];
 
           // Get AI response
-          const response = await invokeLLM({ messages: llmMessages });
-          const rawContent = response.choices?.[0]?.message?.content || 'Je n\'ai pas pu générer une réponse.';
-          const assistantContent = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+          let assistantContent = 'Je n\'ai pas pu générer une réponse.';
+          try {
+            const response = await invokeLLM({ messages: llmMessages });
+            const rawContent = response.choices?.[0]?.message?.content || assistantContent;
+            assistantContent = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+          } catch (llmError) {
+            console.error('[LLM Error]', llmError);
+            // Use fallback content if LLM fails
+            assistantContent = 'Désolé, une erreur s\'est produite lors de la génération de la réponse. Veuillez réessayer.';
+          }
 
           // Save assistant message
           const assistantMsg = await createMessage(ctx.user.id, 'assistant', assistantContent);
@@ -84,13 +91,14 @@ export const appRouter = router({
           const imageData = await generateImage({ prompt: input.prompt });
           const message = `![Generated Image](${imageData.url})`;
           
-          // Save the image generation as an assistant message
-          await createMessage(ctx.user.id, 'assistant', message);
+          // Save the image generation as an assistant message and return it
+          const savedMessage = await createMessage(ctx.user.id, 'assistant', message);
+          if (!savedMessage) throw new Error('Failed to save image message');
           
           return { 
             success: true, 
             url: imageData.url,
-            message
+            message: savedMessage,
           };
         } catch (error) {
           console.error('[Image Generation Error]', error);
@@ -114,15 +122,16 @@ export const appRouter = router({
           const fileKey = `chat-files/${ctx.user.id}/${Date.now()}-${input.filename}`;
           const { url, key } = await storagePut(fileKey, buffer, input.mimeType);
           
-          // Save file reference as a message
-          const message = `📎 [${input.filename}](${url})`;
-          await createMessage(ctx.user.id, 'assistant', message);
+          // Save file reference as a message and return it
+          const messageContent = `📎 [${input.filename}](${url})`;
+          const savedMessage = await createMessage(ctx.user.id, 'assistant', messageContent);
+          if (!savedMessage) throw new Error('Failed to save file message');
           
           return { 
             success: true, 
             url,
             key,
-            message
+            message: savedMessage,
           };
         } catch (error) {
           console.error('[File Upload Error]', error);
@@ -137,12 +146,13 @@ export const appRouter = router({
         try {
           const result = await generateMusic({ prompt: input.prompt });
           
-          // Save the music generation request as an assistant message
-          await createMessage(ctx.user.id, 'assistant', result.message);
+          // Save the music generation request as an assistant message and return it
+          const savedMessage = await createMessage(ctx.user.id, 'assistant', result.message);
+          if (!savedMessage) throw new Error('Failed to save music message');
           
           return { 
             success: result.status !== 'error', 
-            message: result.message,
+            message: savedMessage,
             url: result.url,
             status: result.status
           };
